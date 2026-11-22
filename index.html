@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#101827">
+<title>أتوبيس كمبليت</title>
+<style>
+:root{--bg:#101827;--panel:#1b2739;--panel2:#243349;--text:#f7f9fc;--muted:#a9b7ca;--blue:#5b8cff;--green:#31c48d;--red:#ff6b6b}
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(150deg,#101827,#182a43);color:var(--text);font-family:Tahoma,Arial,sans-serif;min-height:100vh;padding:16px}
+.app{max-width:650px;margin:auto}
+.brand{text-align:center;padding:14px 0 20px}
+.brand h1{font-size:28px;margin:0 0 7px}
+.brand p{color:var(--muted);margin:0}
+.card{background:var(--panel);border:1px solid #34445c;border-radius:18px;padding:18px;margin-bottom:14px;box-shadow:0 12px 32px #0003}
+h2{font-size:19px;margin:0 0 14px}
+.field{margin:12px 0}
+.field label{display:block;margin-bottom:7px;color:#d9e4f3;font-weight:bold}
+input{width:100%;border:1px solid #435570;background:#111c2b;color:#fff;padding:13px;border-radius:11px;font-size:16px;outline:none}
+input:focus{border-color:var(--blue)}
+button{width:100%;border:0;border-radius:12px;padding:14px;margin-top:10px;background:var(--blue);color:#fff;font-size:16px;font-weight:bold;cursor:pointer}
+button.secondary{background:#34445c}
+button.green{background:#159b70}
+button:disabled{opacity:.5;cursor:not-allowed}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.muted{color:var(--muted);font-size:13px;line-height:1.6}
+.status{padding:11px;border-radius:10px;background:#263b36;color:#a7f3d0;margin:10px 0}
+.status.err{background:#3a2424;color:#ff8989}
+.status.warn{background:#3a3324;color:#ffd166}
+.hidden{display:none!important}
+.roomcode{font-size:30px;letter-spacing:5px;text-align:center;color:#9dbaff;font-weight:bold}
+.players{display:grid;gap:8px}
+.player{display:flex;justify-content:space-between;background:var(--panel2);padding:11px;border-radius:10px}
+.player.off{opacity:.5;text-decoration:line-through}
+.letter{font-size:64px;font-weight:bold;text-align:center;color:#8fb0ff;margin:4px}
+.timer{text-align:center;font-size:22px;font-weight:bold;color:#ffd166}
+.timer.low{color:var(--red)}
+.cat{margin:10px 0}
+.cat label{display:block;margin-bottom:6px}
+.tablewrap{overflow:auto}
+table{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px}
+td,th{padding:9px;border:1px solid #435570;text-align:center}
+th{background:#2b3d56}
+.ok{color:#5ee2ad}
+.bad{color:#ff8989}
+.notice{color:#ffd166}
+.footer{text-align:center;color:var(--muted);font-size:12px;padding:10px}
+button.red{background:#d64545}
+.settings{background:var(--panel2);border-radius:12px;padding:12px;margin:12px 0}
+.settings .row{display:flex;gap:10px;align-items:center;margin:8px 0}
+.settings .row span{flex:1}
+select{background:#111c2b;color:#fff;border:1px solid #435570;border-radius:10px;padding:10px;font-size:15px}
+.roomcode{cursor:pointer}
+.banner{padding:10px;border-radius:10px;background:#3a2424;color:#ff8989;text-align:center;font-weight:bold;margin:10px 0}
+.mini{width:auto;margin:0 6px;padding:5px 9px;font-size:12px;background:#159b70}
+.timerbar{height:6px;border-radius:4px;background:#111c2b;overflow:hidden;margin:6px 0 12px}
+.timerbar div{height:100%;width:100%;background:var(--green);transition:width 1s linear}
+</style>
+</head><body>
+<main class="app">
+  <header class="brand">
+    <h1>🚌 أتوبيس كمبليت</h1>
+    <p>تحدّى أصحابك… كلمة صح ونقاط أكتر!</p>
+  </header>
+
+  <section id="home" class="card">
+    <h2>ابدأ اللعب أونلاين</h2>
+    <div class="field"><label>اسمك في اللعبة</label><input id="nickname" maxlength="18" placeholder="اكتب اسمك"></div>
+    <button id="createBtn">إنشاء غرفة جديدة</button>
+    <div class="field"><label>كود الغرفة</label><input id="roomInput" maxlength="6" placeholder="مثال: A7K2Q"></div>
+    <button id="joinBtn" class="secondary">انضم لغرفة</button>
+    <div id="connection" class="status">جاري الاتصال بالسيرفر…</div>
+    <p class="muted">اللعب يحتاج اتصال إنترنت. شارك كود الغرفة مع أصدقائك.</p>
+  </section>
+
+  <section id="lobby" class="card hidden">
+    <h2>غرفة اللعب</h2>
+    <div class="roomcode" id="roomCode"></div>
+    <p class="muted" id="hostHint"></p>
+    <div class="settings">
+      <div class="row"><span>عدد الجولات</span>
+        <select id="setRounds"><option>3</option><option>5</option><option>8</option><option>10</option><option>15</option><option>20</option></select></div>
+      <div class="row"><span>وقت الجولة (ثانية)</span>
+        <select id="setSeconds"><option>20</option><option>30</option><option>45</option><option>60</option></select></div>
+      <p class="muted" id="settingsText"></p>
+    </div>
+    <h2>اللاعبون</h2>
+    <div id="players" class="players"></div>
+    <button id="startBtn" class="green hidden">ابدأ الجولة</button>
+    <button id="leaveBtn" class="secondary">الخروج من الغرفة</button>
+  </section>
+
+  <section id="game" class="card hidden">
+    <div id="roundLabel" class="muted"></div>
+    <div class="letter" id="letter">؟</div>
+    <div class="timer" id="timer">--:--</div>
+    <div class="timerbar"><div id="timerFill"></div></div>
+    <div id="stopBanner" class="banner hidden"></div>
+    <div id="answerForm"></div>
+    <button id="stopBtn" class="red">🛑 أتوبيس! (خلصت كل الخانات)</button>
+    <button id="submitBtn" class="green">تسليم الإجابات</button>
+    <div id="waiting" class="status hidden">تم استلام إجاباتك. في انتظار باقي اللاعبين…</div>
+    <div id="roundResults" class="hidden"></div>
+    <button id="nextBtn" class="hidden">الجولة التالية</button>
+  </section>
+
+  <section id="scores" class="card hidden">
+    <h2>الترتيب العام</h2>
+    <div id="scoreList" class="players"></div>
+  </section>
+
+  <section id="finished" class="card hidden">
+    <h2>🏆 النتيجة النهائية</h2>
+    <div id="finalScores" class="players"></div>
+    <button id="playAgainBtn" class="green hidden">🔁 العب مرة تانية</button>
+    <button id="backHomeBtn" class="secondary">العودة للرئيسية</button>
+  </section>
+
+  <div class="footer">أتوبيس كمبليت • نسخة أونلاين</div>
+</main>
+
+<script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+<script>
+// نستخدم نفس الدومين، لكن بمسار API اللي Vercel بيوفّره
+const SERVER_URL = window.location.origin;
+const SOCKET_PATH = '/api/socket';
+const CATEGORIES = ['اسم','بلد','حيوان','نبات','جماد','أكلة'];
+const STORAGE_KEY = 'autobus_session';
+const $ = id => document.getElementById(id);
+
+let socket = null;
+let room = '';
+let playerId = '';
+let myToken = '';
+let isHost = false;
+let submitted = false;
+let curRound = 0, totalRounds = 0, roundSeconds = 30;
+
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function saveSession(){try{localStorage.setItem(STORAGE_KEY, JSON.stringify({room, token:myToken, playerId}))}catch(e){}}
+function clearSession(){try{localStorage.removeItem(STORAGE_KEY)}catch(e){}}
+
+function show(id){
+  ['home','lobby','game','finished'].forEach(x=>$(x).classList.toggle('hidden',x!==id));
+  if(id==='lobby') $('scores').classList.remove('hidden');
+  else $('scores').classList.add('hidden');
+}
+
+function setConn(text, cls){
+  $('connection').textContent = text;
+  $('connection').className = 'status' + (cls ? ' ' + cls : '');
+}
+
+function safeEmit(ev, data){
+  if(socket && socket.connected) socket.emit(ev, data);
+  else alert('انقطع الاتصال بالسيرفر، جاري إعادة المحاولة…');
+}
+
+function resetLocal(){
+  clearSession();
+  room=''; myToken=''; playerId=''; submitted=false; isHost=false;
+}
+
+function connect(){
+  if(!window.io){ setConn('تعذر تحميل مكتبة الاتصال. تحقق من الإنترنت.', 'err'); return; }
+
+  socket = io(SERVER_URL, {
+    path: SOCKET_PATH,
+    addTrailingSlash: false,
+    transports: ['websocket'],   // إجباري على Vercel
+    reconnection: true,
+    reconnectionAttempts: Infinity,
+    reconnectionDelay: 1000
+  });
+
+  socket.on('connect', ()=>{
+    setConn('متصل بالسيرفر ✓');
+    let saved = null;
+    try { saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); } catch(e){}
+    if(saved && saved.room && saved.token && !socket.recovered){
+      socket.emit('rejoin_room', {code: saved.room, token: saved.token});
+    } else if(!saved){
+      show('home');
+    }
+  });
+
+  socket.on('disconnect', ()=>setConn('انقطع الاتصال… جاري إعادة المحاولة','err'));
+  socket.on('connect_error', ()=>setConn('لم نتمكن من الاتصال. تأكد من نشر السيرفر وضبط رابطه.','err'));
+
+  socket.on('room_joined', d=>{
+    room = d.code; myToken = d.token; playerId = d.playerId;
+    saveSession(); show('lobby');
+  });
+
+  socket.on('rejoin_failed', d=>{
+    resetLocal();
+    alert((d && d.reason) || 'تعذر استعادة الجلسة');
+    show('home');
+  });
+
+  socket.on('room_update', data=>{
+    room = data.code;
+    isHost = data.hostId === playerId;
+    $('roomCode').textContent = data.code;
+    $('hostHint').textContent = isHost
+      ? 'أنت قائد الغرفة. ابدأ عندما ينضم أصدقاؤك.'
+      : 'في انتظار قائد الغرفة لبدء اللعب.';
+    $('players').innerHTML = data.players.map(p=>{
+      const crown = p.id===data.hostId ? ' 👑' : '';
+      const me = p.id===playerId ? ' 🫵' : '';
+      const off = p.disconnected ? ' (منقطع)' : '';
+      return `<div class="player${p.disconnected?' off':''}"><span>${esc(p.name)}${crown}${me}${off}</span><b>${p.score} نقطة</b></div>`;
+    }).join('');
+    $('startBtn').classList.toggle('hidden', !isHost || data.players.filter(p=>!p.disconnected).length<2);
+    if(data.settings){
+      roundSeconds = data.settings.seconds;
+      $('setRounds').value = data.settings.rounds;
+      $('setSeconds').value = data.settings.seconds;
+      $('setRounds').disabled = $('setSeconds').disabled = !isHost;
+      $('settingsText').textContent = isHost ? '' : 'الإعدادات يحددها قائد الغرفة.';
+    }
+    $('playAgainBtn').classList.toggle('hidden', !isHost);
+    $('scoreList').innerHTML = data.players.slice().sort((a,b)=>b.score-a.score)
+      .map(p=>`<div class="player"><span>${esc(p.name)}</span><b>${p.score}</b></div>`).join('');
+    if(!$('roundResults').classList.contains('hidden')){
+      $('nextBtn').classList.toggle('hidden', !isHost);
+    }
+  });
+
+  socket.on('host_changed', d=>{ isHost = d.hostId === playerId; });
+
+  socket.on('game_started', renderRound);
+
+  socket.on('round_tick', t=>{
+    const v = Math.max(0, t);
+    const m = Math.floor(v/60), s = v % 60;
+    $('timer').textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    $('timer').classList.toggle('low', v<=10);
+    $('timerFill').style.width = Math.min(100, v/roundSeconds*100) + '%';
+    $('timerFill').style.background = v<=10 ? 'var(--red)' : 'var(--green)';
+  });
+
+  socket.on('stop_called', d=>{
+    $('stopBanner').textContent = `🛑 ${d.by} قال أتوبيس! باقي 10 ثواني`;
+    $('stopBanner').classList.remove('hidden');
+    if(navigator.vibrate) try{navigator.vibrate([200,100,200])}catch(e){}
+  });
+
+  socket.on('back_to_lobby', ()=>{ submitted=false; show('lobby'); });
+
+  socket.on('submitted', data=>{
+    submitted = true;
+    $('waiting').classList.remove('hidden');
+    $('submitBtn').disabled = true;
+    $('stopBtn').disabled = true;
+    document.querySelectorAll('#answerForm input').forEach(i=>i.disabled = true);
+    if(data && data.answers){
+      Object.entries(data.answers).forEach(([cat,val])=>{
+        const inp = document.querySelector(`#answerForm input[data-cat="${cat}"]`);
+        if(inp) inp.value = val;
+      });
+    }
+  });
+
+  socket.on('round_results', renderResults);
+
+  socket.on('error_message', m=>alert(m));
+
+  socket.on('game_finished', data=>{
+    const scores = (data && data.scores) || [];
+    $('finalScores').innerHTML = scores.map((p,i)=>{
+      const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':'';
+      return `<div class="player"><span>${medal} ${esc(p.name)}</span><b>${p.score}</b></div>`;
+    }).join('');
+    show('finished');
+  });
+
+  socket.on('room_closed', d=>{
+    resetLocal();
+    alert((d && d.reason) || 'تم إغلاق الغرفة');
+    show('home');
+  });
+}
+
+function validName(){
+  const n = $('nickname').value.trim();
+  if(!n){ alert('اكتب اسمك أولاً'); return null; }
+  return n;
+}
+
+$('createBtn').onclick = ()=>{ const n = validName(); if(n) safeEmit('create_room', {name: n}); };
+$('joinBtn').onclick = ()=>{
+  const n = validName();
+  const c = $('roomInput').value.trim().toUpperCase();
+  if(!c){ alert('اكتب كود الغرفة'); return; }
+  if(n) safeEmit('join_room', {name: n, code: c});
+};
+$('startBtn').onclick = ()=>safeEmit('start_game', {code: room});
+$('leaveBtn').onclick = ()=>{
+  safeEmit('leave_room', {code: room});
+  resetLocal();
+  show('home');
+};
+$('nextBtn').onclick = ()=>safeEmit('next_round', {code: room});
+$('playAgainBtn').onclick = ()=>safeEmit('play_again', {code: room});
+function sendSettings(){
+  if(isHost) safeEmit('update_settings', {code: room, rounds: +$('setRounds').value, seconds: +$('setSeconds').value});
+}
+$('setRounds').onchange = sendSettings;
+$('setSeconds').onchange = sendSettings;
+$('roomCode').onclick = async ()=>{
+  try{ await navigator.clipboard.writeText(room); $('hostHint').textContent = 'تم نسخ الكود ✓ ابعته لأصحابك'; }catch(e){}
+};
+$('stopBtn').onclick = ()=>{
+  if(submitted) return;
+  const answers = {};
+  document.querySelectorAll('#answerForm input').forEach(i=>answers[i.dataset.cat]=i.value.trim());
+  if(Object.values(answers).some(v=>!v)){ alert('لازم تكمّل كل الخانات قبل ما تقول أتوبيس!'); return; }
+  safeEmit('submit_answers', {code: room, answers, stop: true});
+};
+$('answerForm').addEventListener('keydown', e=>{
+  if(e.key==='Enter'){
+    const ins=[...document.querySelectorAll('#answerForm input')];
+    const i=ins.indexOf(e.target);
+    if(i>=0 && i<ins.length-1){ e.preventDefault(); ins[i+1].focus(); }
+  }
+});
+$('backHomeBtn').onclick = ()=>{
+  safeEmit('leave_room', {code: room});
+  resetLocal();
+  show('home');
+};
+
+function renderRound(d){
+  show('game');
+  $('roundResults').classList.add('hidden');
+  $('waiting').classList.add('hidden');
+  $('submitBtn').disabled = false;
+  $('submitBtn').classList.remove('hidden');
+  $('nextBtn').classList.add('hidden');
+  submitted = false;
+  curRound = d.round; totalRounds = d.total || 0;
+  $('stopBtn').disabled = false;
+  $('stopBtn').classList.remove('hidden');
+  $('stopBanner').classList.add('hidden');
+  $('timerFill').style.width = '100%';
+  $('roundLabel').textContent = `الجولة ${d.round}${d.total?' / '+d.total:''}`;
+  $('letter').textContent = d.letter;
+  $('timer').textContent = '--:--';
+  $('timer').classList.remove('low');
+  $('answerForm').innerHTML = CATEGORIES.map(c=>
+    `<div class="cat"><label>${c}</label><input data-cat="${c}" maxlength="40" autocomplete="off" placeholder="اكتب ${c} بحرف ${d.letter}"></div>`
+  ).join('');
+}
+
+$('submitBtn').onclick = ()=>{
+  if(submitted) return;
+  const answers = {};
+  document.querySelectorAll('#answerForm input').forEach(i=>answers[i.dataset.cat]=i.value.trim());
+  safeEmit('submit_answers', {code: room, answers});
+};
+
+function renderResults(d){
+  $('waiting').classList.add('hidden');
+  $('submitBtn').classList.add('hidden');
+  $('stopBtn').classList.add('hidden');
+  $('stopBanner').classList.add('hidden');
+  $('roundResults').classList.remove('hidden');
+
+  let html = '<h2>نتائج الجولة</h2>' + (isHost ? '<p class="muted">لو فيه كلمة صحيحة والقاموس رفضها، اضغط «قبول» لإضافة 10 نقاط.</p>' : '') + '<div class="tablewrap"><table><tr><th>اللاعب</th><th>الفئة</th><th>الكلمة</th><th>النقاط</th><th>الحالة</th></tr>';
+  d.rows.forEach((r,i)=>{
+    const acc = (isHost && r.status==='كلمة غير صحيحة') ? `<button class="mini" data-accept="${i}">قبول</button>` : '';
+    html += `<tr><td>${esc(r.player)}</td><td>${esc(r.category)}</td><td>${esc(r.word||'—')}</td><td>${r.points}</td><td class="${r.points?'ok':'bad'}">${esc(r.status)}${acc}</td></tr>`;
+  });
+  html += '</table></div><h2>الترتيب</h2>';
+  html += d.scores.map(p=>`<div class="player"><span>${esc(p.name)}</span><b>${p.score} نقطة</b></div>`).join('');
+  $('roundResults').innerHTML = html;
+  $('roundResults').querySelectorAll('[data-accept]').forEach(b=>{
+    b.onclick = ()=>safeEmit('accept_word', {code: room, index: +b.dataset.accept});
+  });
+
+  $('nextBtn').textContent = (totalRounds && curRound>=totalRounds) ? 'عرض النتيجة النهائية' : 'الجولة التالية';
+  $('nextBtn').classList.toggle('hidden', !isHost);
+}
+
+connect();
+</script>
+</body>
+</html>
